@@ -20,8 +20,13 @@ import { FormProvider, useForm } from 'react-hook-form'
 import { loginFormSchema, registerFormSchema, type LoginFormType, type RegisterFormType } from "@/form/loginForm"
 import { zodResolver } from "@hookform/resolvers/zod"
 import InputFormField from "@/formFields/InputFormField"
+import { useAuthentication, useUserRegister } from "@/hooks/useAuth"
 
 export function Login() {
+
+    const { mutate, isError } = useAuthentication()
+    const { mutate: registerMutate } = useUserRegister()
+
     const loginForm = useForm({
         resolver: zodResolver(loginFormSchema)
     })
@@ -30,16 +35,16 @@ export function Login() {
         resolver: zodResolver(registerFormSchema)
     })
 
-    const { handleSubmit} = loginForm
+    const { handleSubmit } = loginForm
     const { handleSubmit: handleRegisterSubmit } = registerForm
 
 
     function onLoginSubmit(data: LoginFormType) {
-        console.log("Login submitted", data)
+        mutate(data)
     }
 
     function onRegisterSubmit(data: RegisterFormType) {
-        console.log("Register submitted", data)
+        registerMutate(data)
     }
 
     return (
@@ -81,13 +86,17 @@ export function Login() {
                                         />
 
                                     </CardContent>
-                                    <CardFooter>
+                                    <CardFooter className="flex flex-col gap-2">
                                         <Button type="submit">Login</Button>
+
+                                        {isError && <span>Authentication Failed</span>}
                                     </CardFooter>
                                 </Card>
                             </TabsContent>
                         </form>
                     </FormProvider>
+
+
 
                     <FormProvider {...registerForm}>
                         <form onSubmit={handleRegisterSubmit(onRegisterSubmit)}>
@@ -111,13 +120,6 @@ export function Login() {
                                             placeholder="Enter your email"
                                             name="email"
                                             type="email"
-                                            required
-                                        />
-                                        <InputFormField
-                                            label="Mobile Number"
-                                            placeholder="Enter your mobile number"
-                                            name="contactNumber"
-                                            type="tel"
                                             required
                                         />
 

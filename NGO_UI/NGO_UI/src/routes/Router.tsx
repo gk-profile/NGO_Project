@@ -19,6 +19,7 @@ export function RouterProvider() {
                     path: "/dashboard",
                     element: <Dashboard />,
                 }
-            ],}
+            ],
+        }
     ])
 }

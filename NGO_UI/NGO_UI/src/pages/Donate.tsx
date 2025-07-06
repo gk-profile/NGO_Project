@@ -6,17 +6,23 @@ import InputFormField from '@/formFields/InputFormField';
 import ComboboxField from '@/formFields/ComboboxField';
 import SwitchField from '@/formFields/SwitchField';
 import { Button } from '@/components/ui/button';
+import { useAddDonationMutation, useDeleteDonationMutation, useEditDonationMutation } from '@/hooks/useDonation';
+import { use } from 'react';
+import { useUserDetails } from '@/store/useUserStore';
 
 type Props = {
     data?: DonationFormType;
     mode?: string;
+    toggle?: (value: boolean) => void;
 };
 
-const Donate = ({ data, mode = "add" }: Props) => {
+const Donate = ({ data, mode = "add", toggle }: Props) => {
+    const userID = useUserDetails((state) => state.userID);
+
     const donateForm = useForm<DonationFormType>({
         resolver: zodResolver(donationSchema),
         defaultValues: data ? data : {
-            pickupRequired: true,
+            pickupRequired: false,
             isPerishable: false,
         },
     });
@@ -25,131 +31,161 @@ const Donate = ({ data, mode = "add" }: Props) => {
     const pickupRequired = watch('pickupRequired');
     const isPerishable = watch('isPerishable');
 
-    const onDonationSubmit = (data: DonationFormType) => {
-        console.log('Donation submitted:', data);
-        reset()
+    const { mutateAsync: addDonation, isPending } = useAddDonationMutation();
+
+    const { mutateAsync: editDonation } = useEditDonationMutation();
+
+    const { mutateAsync: deleteDonation } = useDeleteDonationMutation();
+
+    const onDonationSubmit = async (data: DonationFormType) => {
+        if (mode === "add") {
+            await addDonation(data);
+            if (toggle) toggle(false);
+        } else if (mode === "edit") {
+            const payload = { ...data, userID };
+            await editDonation(payload);
+            if (toggle) toggle(false);
+        }
+        reset();
+    };
+
+    const handleDelete = async () => {
+        if (data) {
+            const payload = { ...data, userID };
+            await deleteDonation(payload);
+            if (toggle) toggle(false);
+        }
     };
 
     return (
-        <FormProvider {...donateForm}>
-            <form
-                onSubmit={handleSubmit(onDonationSubmit)}
-                className={`space-y-4 ${mode === "view" ? "pointer-events-none opacity-70" : ""}`}
-            >
-                <InputFormField
-                    label="Donor Name"
-                    placeholder="Enter your name"
-                    name="donorName"
-                    required
-                />
+        <>
+            {mode === "delete" ? (
+                <Button type="button" className="w-full" onClick={handleDelete}>
+                    Delete Donation
+                </Button>
+            ) : (
+                <FormProvider {...donateForm}>
+                    <form
+                        onSubmit={handleSubmit(onDonationSubmit)}
+                        className={`space-y-4 ${mode === "view" ? "pointer-events-none opacity-70" : ""}`}
+                    >
+                        <InputFormField
+                            label="Donor Name"
+                            placeholder="Enter your name"
+                            name="donorName"
+                            required
+                        />
 
-                <ComboboxField
-                    name="donorType"
-                    options={['public', 'restaurant', 'store', 'company']}
-                    label="Type of Donor"
-                    placeholder="Select donor type"
-                />
+                        <ComboboxField
+                            name="donorType"
+                            options={['public', 'restaurant', 'store', 'company']}
+                            label="Type of Donor"
+                            placeholder="Select donor type"
+                        />
 
-                <InputFormField
-                    label="Contact Number"
-                    placeholder="Enter your contact number"
-                    name="contactNumber"
-                    type="tel"
-                    required
-                />
+                        <InputFormField
+                            label="Contact Number"
+                            placeholder="Enter your contact number"
+                            name="contactNumber"
+                            type="tel"
+                            required
+                        />
 
-                <InputFormField
-                    label="Email"
-                    placeholder="Enter your email"
-                    name="email"
-                    type="email"
-                />
+                        <InputFormField
+                            label="Email"
+                            placeholder="Enter your email"
+                            name="email"
+                            type="email"
+                        />
 
-                <InputFormField
-                    label="Item Type"
-                    placeholder="Enter the item type"
-                    name="itemType"
-                    type="text"
-                    required
-                />
+                        <InputFormField
+                            label="Item Type"
+                            placeholder="Enter the item type"
+                            name="itemType"
+                            type="text"
+                            required
+                        />
 
-                <ComboboxField
-                    name="foodCategory"
-                    options={['raw', 'cooked', 'packaged']}
-                    label="Food Category"
-                    placeholder="Select food category"
-                />
+                        <ComboboxField
+                            name="foodCategory"
+                            options={['raw', 'cooked', 'packaged']}
+                            label="Food Category"
+                            placeholder="Select food category"
+                        />
 
-                <InputFormField
-                    label="Quantity"
-                    placeholder="Enter quantity"
-                    name="quantity"
-                    type="number"
-                    required
-                />
+                        <InputFormField
+                            label="Quantity"
+                            placeholder="Enter quantity"
+                            name="quantity"
+                            type="number"
+                            required
+                        />
 
-                <ComboboxField
-                    name="quantityUnit"
-                    options={['kg', 'L', 'packs']}
-                    label="Quantity Unit"
-                    placeholder="Select quantity unit"
-                />
+                        <ComboboxField
+                            name="quantityUnit"
+                            options={['kg', 'L', 'packs']}
+                            label="Quantity Unit"
+                            placeholder="Select quantity unit"
+                        />
 
-                <SwitchField name="pickupRequired" label="Pickup Required?" />
-                <SwitchField name="isPerishable" label="Is Perishable?" />
+                        <SwitchField name="pickupRequired" label="Pickup Required?" />
+                        <SwitchField name="isPerishable" label="Is Perishable?" />
 
-                {pickupRequired && (
-                    <InputFormField
-                        label="Pickup Address"
-                        placeholder="Enter pickup address"
-                        name="address"
-                        required
-                    />
-                )}
+                        {pickupRequired && (
+                            <InputFormField
+                                label="Pickup Address"
+                                placeholder="Enter pickup address"
+                                name="address"
+                                required
+                            />
+                        )}
 
-                {!pickupRequired && isPerishable && (
-                    <ComboboxField
-                        name="dropLocation"
-                        options={['center1', 'center2', 'center3']}
-                        label="Drop Location"
-                        placeholder="Select a drop location"
-                    />
-                )}
+                        {((!pickupRequired && isPerishable) || (!pickupRequired && !isPerishable)) && (
+                            <ComboboxField
+                                name="drop_location"
+                                options={['center1', 'center2', 'center3']}
+                                label="Drop Location"
+                                placeholder="Select a drop location"
+                            />
+                        )}
 
-                {mode === "edit" && (
-                    <ComboboxField
-                        name="status"
-                        options={["pending", "approved", "picked_up", "delivered", "cancelled"]}
-                        label="Status"
-                        placeholder="Select status"
-                    />
-                )}
+                        {mode === "edit" && (
+                            <ComboboxField
+                                name="status"
+                                options={["pending", "approved", "picked_up", "delivered", "cancelled"]}
+                                label="Status"
+                                placeholder="Select status"
+                            />
+                        )}
 
-                <InputFormField
-                    label="Pickup Time"
-                    placeholder="Enter preferred pickup time"
-                    name="pickupTime"
-                    type="datetime-local"
-                />
+                        <InputFormField
+                            label="Donate Time"
+                            placeholder="Enter preferred Donation time"
+                            name="DonateTime"
+                            type="datetime-local"
+                        />
 
-                <InputFormField
-                    label="Notes"
-                    placeholder="Additional notes..."
-                    name="notes"
-                    type="text"
-                />
+                        <InputFormField
+                            label="Notes"
+                            placeholder="Additional notes..."
+                            name="notes"
+                            type="text"
+                            required={false}
+                        />
 
-                {mode == "add" ? (
-                    <Button type="submit" className="w-full">
-                        Submit Donation
-                    </Button>
-                ) : mode == "edit" ? (
-                    <Button type="submit" className="w-full">
-                        Edit Donation
-                    </Button>
-                ) : null}
-            </form>
-        </FormProvider>
+                        {mode === "add" ? (
+                            <Button type="submit" className="w-full">
+                                {isPending ? "Submitting..." : "Submit Donation"}
+                            </Button>
+                        ) : mode === "edit" ? (
+                            <Button type="submit" className="w-full">
+                                Edit Donation
+                            </Button>
+                        ) : null}
+                    </form>
+                </FormProvider>
+            )}
+        </>
     );
 };
 

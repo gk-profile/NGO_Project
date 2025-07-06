@@ -14,25 +14,33 @@ export const donationStatus = [
 
 export const donationSchema = z
   .object({
+    id: z.number().optional(),
+
     donorName: z.string().min(2, "Donor name is required"),
+
     donorType: z.enum(donorTypes, {
       required_error: "Select a donor type",
     }),
+
     contactNumber: z
       .string()
       .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
+
     email: z.string().email("Enter a valid email").optional(),
 
     itemType: z.string().min(2, "Enter item name"),
+
     foodCategory: z.enum(foodCategories, {
       required_error: "Select a food category",
     }),
+
     quantity: z
       .number({
         required_error: "Enter quantity",
         invalid_type_error: "Quantity must be a number",
       })
       .min(1, "Quantity must be greater than 0"),
+
     quantityUnit: z.enum(quantityUnits, {
       required_error: "Select a unit (kg/L/packs)",
     }),
@@ -43,14 +51,15 @@ export const donationSchema = z
     isPerishable: z.boolean(),
 
     address: z.string().optional(),
-    dropLocation: z.enum(dropLocations).optional(),
 
-    pickupTime: z.string().optional(),
+    drop_location: z.enum(dropLocations).optional().nullable(),
+
+    DonateTime: z.string().min(1, "Donation time is required"),
+
     notes: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    // Pickup selected -> address required
-    if (data.pickupRequired && !data.address) {
+    if (data.pickupRequired && (!data.address || data.address.trim() === "")) {
       ctx.addIssue({
         path: ["address"],
         code: z.ZodIssueCode.custom,
@@ -58,10 +67,9 @@ export const donationSchema = z
       });
     }
 
-    // Perishable and no pickup -> drop location required
-    if (data.isPerishable && !data.pickupRequired && !data.dropLocation) {
+    if (!data.pickupRequired && data.isPerishable && !data.drop_location) {
       ctx.addIssue({
-        path: ["dropLocation"],
+        path: ["drop_location"],
         code: z.ZodIssueCode.custom,
         message:
           "Drop location is required for perishable items when pickup is not selected",

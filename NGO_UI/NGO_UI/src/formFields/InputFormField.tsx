@@ -9,11 +9,11 @@ type props = {
     name: string,
     type?: string,
     required?: boolean,
-    value?:any,
-    className?:string
+    value?: any,
+    className?: string
 }
 
-const InputFormField = ({ label, placeholder, name, type = "text", required=true, value, className }: props) => {
+const InputFormField = ({ label, placeholder, name, type = "text", required = true, value, className }: props) => {
 
     const { register, formState: { errors } } = useFormContext()
 

@@ -19,7 +19,7 @@ type dialogType = {
 }
 
 
-const DialogDynamic = ({ title, description, content, isInfo = false, infoDescription, open, onOpenChange, model = true, className, contentClassName,badgeClassName }: dialogType) => {
+const DialogDynamic = ({ title, description, content, isInfo = false, infoDescription, open, onOpenChange, model = true, className, contentClassName, badgeClassName }: dialogType) => {
     return (
         <div>
             <Dialog open={open} onOpenChange={onOpenChange} modal={model}>
